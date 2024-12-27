@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+
+// Maximum number of data points and iterations
+#define MAX_DATA_POINTS 100
+#define MAX_ITERATIONS 10000
+#define LEARNING_RATE 0.01
+
+// Struct to hold dataset (x, y pairs)
+typedef struct {
+    double *x;
+    double *y;
+    int size;
+} Dataset;
+
+// Function to create a dataset (sample data)
+Dataset create_dataset(int size) {
+    Dataset dataset;
+    dataset.size = size;
+    dataset.x = (double *)malloc(sizeof(double) * size);
+    dataset.y = (double *)malloc(sizeof(double) * size);
+
+    // Simple dataset for linear regression: y = 2x + 1 (noisy data)
+    for (int i = 0; i < size; i++) {
+        dataset.x[i] = i + 1;  // x values: 1, 2, 3, ...
+        dataset.y[i] = 2 * dataset.x[i] + 1 + ((rand() % 10) - 5); // y = 2x + 1 + noise
+    }
+
+    return dataset;
+}
+
+// Function to calculate Mean Squared Error (MSE) for the linear model
+double compute_cost(Dataset dataset, double m, double b) {
+    double total_cost = 0.0;
+    for (int i = 0; i < dataset.size; i++) {
+        double prediction = m * dataset.x[i] + b;
+        double error = prediction - dataset.y[i];
+        total_cost += error * error;
+    }
+    return total_cost / (2 * dataset.size);
+}
+
+// Function to perform gradient descent and update the parameters
+void gradient_descent(Dataset dataset, double *m, double *b) {
+    double m_gradient = 0.0;
+    double b_gradient = 0.0;
+
+    for (int i = 0; i < dataset.size; i++) {
+        double prediction = *m * dataset.x[i] + *b;
+        m_gradient += (prediction - dataset.y[i]) * dataset.x[i];
+        b_gradient += (prediction - dataset.y[i]);
+    }
+
+    // Update the parameters using the gradients
+    *m -= (LEARNING_RATE / dataset.size) * m_gradient;
+    *b -= (LEARNING_RATE / dataset.size) * b_gradient;
+}
+
+// Function to train the linear regression model
+void train_model(Dataset dataset, double *m, double *b) {
+    int iterations = 0;
+    double cost;
+    
+    // Repeat until convergence or the maximum number of iterations is reached
+    do {
+        cost = compute_cost(dataset, *m, *b);
+        gradient_descent(dataset, m, b);
+        iterations++;
+        if (iterations % 1000 == 0) {
+            printf("Iteration %d: Cost = %f\n", iterations, cost);
+        }
+    } while (iterations < MAX_ITERATIONS);
+}
+
+// Function to predict y values based on the learned model
+double predict(double m, double b, double x) {
+    return m * x + b;
+}
+
+// Function to print the dataset
+void print_dataset(Dataset dataset) {
+    printf("Dataset:\n");
+    for (int i = 0; i < dataset.size; i++) {
+        printf("x: %f, y: %f\n", dataset.x[i], dataset.y[i]);
+    }
+}
+
+// Function to test the model with a new data point
+void test_model(double m, double b) {
+    double test_x;
+    printf("\nEnter a value for x to predict y: ");
+    scanf("%lf", &test_x);
+    double predicted_y = predict(m, b, test_x);
+    printf("Predicted y for x = %f: %f\n", test_x, predicted_y);
+}
+
+// Function to free the allocated memory
+void free_dataset(Dataset *dataset) {
+    free(dataset->x);
+    free(dataset->y);
+}
+
+int main() {
+    srand(time(0));
+
+    // Create a dataset
+    Dataset dataset = create_dataset(MAX_DATA_POINTS);
+
+    // Print the dataset
+    print_dataset(dataset);
+
+    // Initialize model parameters
+    double m = 0.0;  // slope (initial guess)
+    double b = 0.0;  // y-intercept (initial guess)
+
+    // Train the model
+    printf("\nTraining the model...\n");
+    train_model(dataset, &m, &b);
+    printf("\nModel trained!\n");
+    printf("Final model parameters: m = %f, b = %f\n", m, b);
+
+    // Test the model
+    test_model(m, b);
+
+    // Free the allocated memory
+    free_dataset(&dataset);
+
+    return 0;
+}
